@@ -7,7 +7,18 @@ RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/master && mv ma
 RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/developer && mv developer /siep-pwa/static/developer.json
 
 # Instala dependencias para python
-RUN apk --no-cache add g++ gcc libgcc libstdc++ linux-headers make python
-RUN npm install --quiet node-gyp -g
+RUN apk --no-cache add --virtual native-deps \
+  g++ gcc libgcc libstdc++ linux-headers autoconf automake make nasm python git && \
+  npm install --quiet node-gyp -g
+
+WORKDIR /usr/src/app
+
+COPY package*.json bower.json .bowerrc ./
+
+RUN npm set progress=false && \
+  npm i --silent && \
+  $(npm bin)/bower --allow-root i
+
+RUN apk del native-deps
 CMD ["sh","/siep-pwa/docker_init.sh"]
 
