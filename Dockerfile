@@ -7,8 +7,11 @@ RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/master && mv ma
 RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/developer && mv developer /siep-pwa/static/developer.json
 
 # Instala dependencias para python
-RUN apk update && apk add --virtual build-dependencies build-base gcc
-RUN apk add --update python
+RUN apk add --no-cache --virtual .gyp \
+        python \
+        make \
+        g++ \
+    && apk del .gyp
 
 RUN npm install
 CMD ["sh","/siep-pwa/docker_init.sh"]
