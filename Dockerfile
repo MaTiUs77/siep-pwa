@@ -7,7 +7,7 @@ RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/master && mv ma
 RUN wget https://api.github.com/repos/decyt-tdf/siep-pwa/commits/developer && mv developer /siep-pwa/static/developer.json
 
 # Instala dependencias para python
-RUN apk add build-base
+RUN apk update && apk add --virtual build-dependencies build-base gcc wget git
 RUN apk add --update python
 
 RUN npm install
