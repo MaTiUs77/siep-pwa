@@ -16,6 +16,7 @@
     "epic-spinners": "^1.1.0",
     "firebase": "^6.4.0",
     "lodash": "^4.17.15",
+    "python": "0.0.4",
     "vue": "^2.5.2",
     "vue-analytics": "^5.16.4",
     "vue-material-design-icons": "^1.5.1",
