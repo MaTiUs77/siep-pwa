@@ -1,6 +1,6 @@
 {
-  "name": "SIEP",
-  "short_name": "SIEP",
+  "name": "SIEP Familiares",
+  "short_name": "SIEP Familiares",
   "icons": [
     {
       "src": "/static/img/icons/siep-192x192.png",
@@ -13,8 +13,10 @@
       "type": "image/png"
     }
   ],
+  "orientation":"portrait",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#FF8A00"
+  "theme_color": "#FF8A00",
+  "gcm_sender_id": "103953800507"
 }

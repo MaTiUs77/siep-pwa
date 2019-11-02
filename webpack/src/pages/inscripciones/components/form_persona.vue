@@ -68,7 +68,6 @@
           :rules="inputRules"
           label="Sexo"
           hint="Campo Requerido"
-          :disabled="disabledOnUpdate"
           required
     ></v-combobox>
 
@@ -79,7 +78,6 @@
             :rules="inputRules"
             label="Tipo de Documento"
             hint="Campo Requerido"
-            :disabled="disabledOnUpdate"
             required
     ></v-combobox>
 
@@ -110,10 +108,17 @@
     <!-- Telefono nro -->
     <v-text-field
             v-model="form.telefono_nro"
-            :rules="inputRules"
+            :rules="telephoneRules"
             label="Teléfono"
             hint="Campo Requerido"
             required
+    ></v-text-field>
+
+    <!-- Telefono nro Alternativo-->
+    <v-text-field
+            v-model="form.telefono_nro_alt"
+            :rules="telephoneRules"
+            label="Teléfono Alternativo"
     ></v-text-field>
 
     <!-- Ciudad -->
@@ -126,13 +131,23 @@
             required
     ></v-combobox>
 
+    <!-- Barrio -->
+    <v-combobox
+            v-model="form.barrio.nombre"
+            :items="barriosApi"
+            :rules="inputRules"
+            label="Barrio donde vive"
+            hint="Campo Requerido"
+            :loading="user.apiNeighborhoodFiltering"
+            :disabled="user.apiNeighborhoodFiltering"
+            required
+    ></v-combobox>
+
       <v-subheader>Su domicilio actual es</v-subheader>
     <!-- Calle nombre -->
     <v-text-field
             v-model="form.calle_nombre"
-            :rules="inputRules"
             label="Calle nombre"
-            hint="Campo Requerido"
             light
             required
     ></v-text-field>
@@ -141,38 +156,35 @@
     <v-text-field
             v-model="form.calle_nro"
             label="Calle número"
-            hint="Campo Requerido"
     ></v-text-field>
 
     <!-- Depto casa -->
     <v-text-field
             v-model="form.depto_casa"
             label="Depto / Casa (letra o número)"
-            hint="Campo Requerido"
-            required
+          
     ></v-text-field>
 
     <!-- Tira edificio -->
     <v-text-field
             v-model="form.tira_edificio"
             label="Tira / Edificio (letra o número)"
-            hint="Campo Requerido"
-            required
+          
     ></v-text-field>
 
     <!-- Comentario: por el momento está deshabilitado -->
-    <!-- <v-textarea
+    <v-textarea
             v-model="form.observaciones"
             :label="texto_observacion"
-            hint="Puede redactar otra observación de interés"
+            hint="Solo indique datos Personales Adicionales"
             color="primary"
             counter="100"
             v-bind:placeholder="observacion_placeholder"
-    ></v-textarea> -->
+    ></v-textarea>
 
     <v-btn color="primary" @click="goBack"><v-icon>navigate_before</v-icon> Volver</v-btn>
-    <v-btn v-if="mode=='create'" color="light-green lighten-1" @click="createPersona">Guardar</v-btn>
-    <v-btn v-if="mode=='update'" color="light-orange lighten-1" @click="updatePersona">Actualizar</v-btn>
+    <v-btn v-if="mode=='create'" color="light-green lighten-1" @click="createPersona" :loading="startWithPersona">Guardar</v-btn>
+    <v-btn v-if="mode=='update'" color="light-orange lighten-1" @click="updatePersona" :loading="startWithPersona">Actualizar</v-btn>
   </v-flex>
 </template>
 
@@ -185,11 +197,16 @@
       disabledOnUpdate:false,
       inputRules: [
         v => !!v || 'Campo Requerido',
-        v => (!v || v.length >= 3) || 'El campo debe tener más de 3 caracteres'
+        v => (!v || v.length >= 3) || 'El campo debe tener más de 3 caracteres',
+        v => (!v || /^[ áÁéÉíÍóÓúÚ a-zA-ZñÑº()\- 0-9]{3,}$/.test(v)) || 'Sólo letras, números, guión medio y el caracter especial º.'
       ],
       inputRulesAlmostOne: [
         v => !!v || 'Campo Requerido',
         v => (!v || v.length >= 1) || 'El campo debe tener más de 1 caracter'
+      ],
+      telephoneRules:[
+        v => !!v || 'Campo Requerido',
+        v => (!v || /^[ 0-9() \-]{6,}$/.test(v) || 'Sólo números, guiones y espacios (mínimo 6 números).')
       ],
       emailRules: [
         v => !!v || 'Campo Requerido',
@@ -201,8 +218,11 @@
       items_sexo:["Masculino","Femenino"],
       items_localidad:["Rio Grande","Ushuaia","Tolhuin"],
       observacion_placeholder:"",
-      texto_observacion: "Observación",
+      texto_observacion: "Observaciónes",
+      combo_barrios_searching:false,
+      combo_barrios_api:[],
 
+      startWithPersona: false,
       form:{},
       alerta:{},
 
@@ -211,6 +231,7 @@
     }),
     computed:{
       user(){
+        console.log(store.state.user);
         return store.state.user;
       },
       computedDateFormatted () {
@@ -218,6 +239,12 @@
       },
       getFamiliar() {
         return this.familiar
+      },
+      barriosApi(){
+        return store.getters.barriosApi;
+      },
+      alert(){
+        return store.state.alert.alert;
       }
     },
     created: function(){
@@ -232,6 +259,8 @@
         if(this.mode == 'create'){
           this.disabledOnUpdate = false;
           this.form.email = store.state.user.authApi.email;
+          this.form.barrio = { nombre:"" };
+          this.form.vinculo = ""
         }
 
         // MODO UPDATE
@@ -239,21 +268,42 @@
           this.disabledOnUpdate = true;
           if(store.getters.persona) {
             this.form = store.getters.persona;
-            this.form.ciudad = this.form.ciudad.nombre;
+            if(!_.has(this.form,'ciudad.nombre')){
+              this.form.barrio = {nombre:""};
+            }else{
+              this.form.ciudad = this.form.ciudad.nombre;
+            }
+
+            if(!_.has(this.form,'barrio.nombre')){
+              this.form.barrio = {nombre:""};
+            }
+
+            if(!_.has(this.form,'familiares.vinculo')){
+              this.form.vinculo = ""
+            }else{
+              this.form.vinculo = this.form.familiares.vinculo
+            }
           }
         }
 
         this.form.familiar = 1;
-        this.form.alumno = 0;
-
       }
 
       if(this.alumno)
       {
         this.form.email = store.state.user.authApi.email;
         this.form.alumno = 1;
-        this.form.familiar = 0;
-        this.texto_observacion = 'Indique instituciones de preferencia';
+        // this.form.familiar = 0;
+        // this.texto_observacion = '';
+        if(!_.has(this.form,'ciudad.nombre')){
+          this.form.barrio = {nombre:""};
+        }else{
+          this.form.ciudad = this.form.ciudad.nombre;
+        }
+        
+        if(!_.has(this.form,'barrio.nombre')){
+          this.form.barrio = {nombre:""};
+        }
       }
 
       // Permite la edicion de los datos del familiar
@@ -268,31 +318,23 @@
         }else{
 
         }
+      },
+      'form.ciudad'(){
+        this.fillNeighborhood();
+      },
+      barriosApi(){},
+      alert(){
+        if(store.state.alert.alert.show){
+          this.startWithPersona = false;
+          this.scrollTop();
+        }
       }
     },
     methods:{
       createPersona:function(){
+        this.startWithPersona = true;
         if(_.isEmpty(this.form.vinculo) && this.getFamiliar){
-          var options = {
-              container: '#vinculo',
-              easing: 'ease-in',
-              offset: -60,
-              force: true,
-              cancelable: true,
-              onStart: function(element) {
-                // scrolling started
-              },
-              onDone: function(element) {
-                // scrolling is done
-              },
-              onCancel: function() {
-                // scrolling has been interrupted
-              },
-              x: false,
-              y: true
-          }
-
-          cancelScroll = this.$scrollTo(element, duration, options)
+          this.startWithPersona = false;
           this.alerta = {
             class: "error",
             message: "Debe completar el campo de Vinculo con el Estudiante",
@@ -300,40 +342,21 @@
           };
           store.dispatch('toggleAlertMessage',this.alerta);
         }else{
-          this.form.pcia_nac ="esta";
-          this.form.nacionalidad ="esta";
+          this.form.pcia_nac ="N/A";
+          this.form.nacionalidad ="N/A";
           this.form = _.omitBy(this.form, _.isEmpty);
           this.form._method = "POST";
           this.form.familiar = this.getFamiliar ? 1 : 0;
           this.form.alumno = !this.getFamiliar ? 1 : 0;
+          this.form.barrio = this.form.barrio.nombre;
           store.dispatch('apiCreatePersona',this.form);
         }
         
       },
       updatePersona:function(){
+        this.startWithPersona = true;
         if(_.isEmpty(this.form.vinculo) && this.getFamiliar){
-
-          var options = {
-              el: '#vinculo',
-              easing: 'ease-in-out',
-              offset: -60,
-              force: true,
-              cancelable: true,
-              onStart: function(element) {
-                // scrolling started
-              },
-              onDone: function(element) {
-                // scrolling is done
-              },
-              onCancel: function() {
-                // scrolling has been interrupted
-              },
-              x: false,
-              y: true
-          }
-
-          var cancelScroll = this.$scrollTo(300, options)
-
+          this.startWithPersona = false;
           this.alerta = {
             show: true,
             class: "error",
@@ -341,12 +364,13 @@
           };
           store.dispatch('toggleAlertMessage',this.alerta);
         }else{
-          this.form.pcia_nac ="esta";
-          this.form.nacionalidad ="esta";
+          this.form.pcia_nac ="N/A";
+          this.form.nacionalidad ="N/A";
           this.form = _.omitBy(this.form, _.isEmpty);
           this.form.familiar = this.getFamiliar ? 1 : 0;
           this.form.alumno = !this.getFamiliar ? 1 : 0,
           this.form._method = "PUT";
+          this.form.barrio = this.form.barrio.nombre;
           store.dispatch('apiUpdatePersona',this.form);
         }
         
@@ -373,14 +397,42 @@
         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       },
       observacionPlaceHolder(){
-        if(this.familiar){
-          this.observacion_placeholder = "Si su hijo/a ya pertenece al sistema educativo pcial indique institución de preferencia";
-        }else{
-          this.observacion_placeholder = "";
-        }
+        // if(this.familiar){
+        //   this.observacion_placeholder = "Si su hijo/a ya pertenece al sistema educativo pcial indique institución de preferencia";
+        // }else{
+        //   this.observacion_placeholder = "";
+        // }
       },
-      save (computedDateFormatted) {
+      save(computedDateFormatted) {
         this.$refs.menu.save(computedDateFormatted)
+      },
+      fillNeighborhood() {
+        if(this.form.barrio  && this.form.barrio.length > 0){
+          this.form.barrio = "";
+        }
+        store.dispatch('apiFilterNeighborhood',{ciudad:this.form.ciudad});
+      },
+      scrollTop(){
+        var options = {
+              el: '#vinculo',
+              easing: 'ease-in-out',
+              offset: -60,
+              force: true,
+              cancelable: true,
+              onStart: function(element) {
+                // scrolling started
+              },
+              onDone: function(element) {
+                // scrolling is done
+              },
+              onCancel: function() {
+                // scrolling has been interrupted
+              },
+              x: false,
+              y: true
+          }
+
+          var cancelScroll = this.$scrollTo(300, options)
       }
     }
   }

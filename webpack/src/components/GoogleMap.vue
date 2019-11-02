@@ -24,6 +24,7 @@
 </template>
 
 <script>
+  import Vue from 'vue'
   export default {
     name: "GoogleMap",
     props:['coords','markers_array'],
@@ -117,6 +118,18 @@
         this.zoom = this.zoom === 15 ? 16 : 15;
       },
       showCenterInfo: function(centro,index) {
+        if(_.isEmpty(centro.data.barrio)){
+          Vue.set(centro.data,'barrio',{'nombre':''});
+        }
+        if(_.isEmpty(centro.data.url)){
+          centro.data.url = '';
+        }
+        if(_.isEmpty(centro.data.email)){
+          centro.data.email = '';
+        }
+        if(centro.data.telefono === null){
+          centro.data.telefono = '';
+        }
         this.center = centro.position;
         this.infoWindowPos = centro.position;
         let titulations = [];
@@ -124,13 +137,13 @@
         '<div style="text-align:left;"><strong>CUE Anexo:</strong> '+centro.data.cue+'</div>'+
         '<div style="text-align:left;"><strong>Nombre:</strong> '+centro.data.nombre+'</div>'+
         '<div style="text-align:left;"><strong>Dirección:</strong> '+centro.data.direccion+'</div>'+
-        '<div style="text-align:left;"><strong>Barrio:</strong> '+centro.data.barrio.nombre+'</div>'+
+        '<div style="text-align:left;"><strong>Barrio:</strong> '+ centro.data.barrio.nombre +'</div>'+
         '<div style="text-align:left;"><strong>Código Postal:</strong> '+centro.data.cp+'</div>'+
         '<div style="text-align:left;"><strong>Código Localidad:</strong> '+centro.data.codigo_localidad+'</div>'+
         '<div style="text-align:left;"><strong>Ciudad:</strong> '+centro.data.ciudad.nombre+'</div>'+
         '<div style="text-align:left;"><strong>Teléfono:</strong> '+centro.data.telefono+'</div>'+
         '<div style="text-align:left;"><strong>Email:</strong> '+centro.data.email+'</div>'+
-        '<div style="text-align:left;"><strong>URL:</strong> '+centro.data.url+'</div>';
+        '<div style="text-align:left;"><strong>URL:</strong> '+ centro.data.url +'</div>';
 
         // Titulaciones solo para nivel Secundario
         if(_.endsWith(centro.data.nivel_servicio,"Secundario")){

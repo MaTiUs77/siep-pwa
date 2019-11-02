@@ -30,7 +30,6 @@
   import router from '../../router'
   export default{
     created: function(){
-      console.log(store.state.user)
       store.commit('updateTitle',"Finalizado");
     },
     computed:{

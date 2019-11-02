@@ -1,13 +1,19 @@
 <template>
   <v-container>
-      <v-flex xs12 class="text-xs-center">
-         <v-progress-circular
+      <v-dialog v-model="spinner" persistent content content-class="centered-dialog">
+        <v-container fill-height>
+          <v-layout column justify-center align-center>
+            <v-progress-circular
               :size="70"
               :width="7"
               color="orange"
               indeterminate
-              v-if="user.apiGetUserDataRunning"
-      ></v-progress-circular>
+              v-if="spinner"
+            ></v-progress-circular>
+          </v-layout>
+        </v-container>
+      </v-dialog>
+      <v-flex xs12 class="text-xs-center">
       <v-text-field
               v-model="documento_nro"
               label="Ingresar documento del Estudiante"
@@ -18,6 +24,11 @@
       <!-- Resultados de busqueda -->
       <v-container fluid grid-list-md>
         <v-layout row wrap>
+          <div v-show="studentNotFound">
+            <p class="not_found">
+              EL NÚMERO DE DOCUMENTO INGRESADO NO PERTENECE A NINGÚN ALUMNO REGULAR
+            </p>
+          </div>
           <v-flex
                 v-for="res in resultado"
                 :key="res.id"
@@ -25,27 +36,27 @@
               >
             <v-card>
               <v-layout fill-height>
+                
                 <v-flex xs12 flexbox>
-                  <v-card-title primary-title>
+                  <v-card-text>
                     <div>
-                      <h3 class="subheading mb-0">{{ res.nombres }} {{ res.apellidos}}</h3>
-                      <div>DNI: {{ res.documento_nro}}</div>
+                      <h3 class="subheading mb-0">{{ res.nombres }} {{ res.apellidos }}</h3>
+                      <h3>DNI: {{ res.documento_nro }}</h3>
                     </div>
-                  </v-card-title>
-                  <v-card-actions>
-                    <v-btn color="success" @click="goWithSelected(res)"><v-icon left>person</v-icon>Vincular Estudiante</v-btn>
-                  </v-card-actions>
+                    <v-btn color="success" @click="goWithSelected(res)" :loading="vinculandoPerfil"><v-icon left>person</v-icon>Vincular Estudiante</v-btn>
+                  </v-card-text>
                 </v-flex>
               </v-layout>
             </v-card>
           </v-flex>
         </v-layout>
       </v-container>
+      
 
       <v-divider v-if="alumnos.length" />
       <!-- Resultados de Relaciones con Familiar -->
       <v-container fluid grid-list-md v-if="alumnos.length">
-        <p >
+        <p class="descriptions">
           AQUI DEBAJO SE LISTAN LOS ESTUDIANTES REGISTRADOS COMO FAMILIAR SUYO
         </p>
         <v-layout row wrap>
@@ -66,8 +77,8 @@
               <v-flex xs12 flexbox>
               <v-card-text>
                 <div>
-                  <h3 class="subheading mb-0">{{ al.alumno.persona.nombres }} {{ al.alumno.persona.apellidos}}</h3>
-                  <div>DNI: {{ al.alumno.persona.documento_nro}}</div>
+                  <h3 class="subheading mb-0">{{ al.nombres }} {{ al.apellidos}}</h3>
+                  <h3>DNI: {{ al.documento_nro}}</h3>
                   <div>
                     <v-chip v-if="al.status === 'confirmada'" color="green" text-color="white">
                       <v-avatar>
@@ -89,12 +100,13 @@
                     </v-chip>
                   </div>
                   <div>
-                    <v-btn v-if="al.status === 'confirmada'" color="info" fab small dark>
+                    <!-- Esto es para más adelante  -->
+                    <!-- <v-btn v-if="al.status === 'confirmada'" color="info" fab small dark>
                       <v-icon>visibility</v-icon>
                     </v-btn>
                     <v-btn v-if="al.status === 'confirmada'" color="info" fab small dark>
                       <v-icon>edit</v-icon>
-                    </v-btn>
+                    </v-btn> -->
                   </div>
                 </div>
               </v-card-text>
@@ -110,7 +122,7 @@
           <v-divider />
 
           <br>
-          <p>
+          <p class="descriptions">
             EN CASO DE NO OBTENER RESULTADOS DE BUSQUEDA, PUEDE AGREGAR UN ESTUDIANTE NUEVO
           </p>
 
@@ -127,27 +139,16 @@
   import axios from 'axios'
 
   export default {
+    components:{},
     data: ()=>({
       apigw: process.env.SIEP_API_GW_INGRESS,
       documento_nro:"",
       findPersonaRunning: false,
+      studentNotFound:false,
+      spinner:true,
+      vinculandoPerfil: false,
       resultado:[],
-      form:{},
-
-      breadcrumbs: [
-        {
-          text: 'Paso 1',
-          disabled: false
-        },
-        {
-          text: 'Paso 2',
-          disabled: false
-        },
-        {
-          text: 'Finalizado',
-          disabled: true
-        }
-      ]
+      form:{}
     }),
     created: function(){
       store.commit('updateTitle',"Inscripciones");
@@ -164,18 +165,30 @@
       },
       alumnos(){
         return store.getters.alumnos
+      },
+      familiar(){
+        return store.getters.familiar
       }
+      // SE HARÁ EN FUTURAS ACTUALIZACIONES
+      // administracion(){
+      //   if(store.state.administracion.administracion.en_mantenimiento === 1){
+      //     router.push('/mantenimiento');
+      //   }
+      //   return store.state.administracion.administracion;
+      // }
     },
     watch:{
-      alumnos(){
-      }
+      alumnos(){if(this.spinner){this.spinner = false;}},
+      familiar(){}
+      // SE HARÁ EN FUTURAS ACTUALIZACIONES
+      // administracion(){}
     },
     methods:{
       startFindPersona:function(){
         let vm = this;
+        vm.studentNotFound = false;
         vm.findPersonaRunning = true;
         vm.resultado = [];
-        
         store.dispatch('apiFindPersona',{
           documento_nro:this.documento_nro,
           alumno:1
@@ -184,11 +197,14 @@
             // handle success
             vm.resultado = response.data.data;
             vm.findPersonaRunning = false;
+            vm.verifyStudentFinded();
+
         })
           .catch(function (error) {
             // handle error
             vm.resultado = [];
             vm.findPersonaRunning = false;
+            vm.studentNotFound = false;
           });
       },
       goNewStudent:function(){
@@ -198,11 +214,37 @@
         router.go(-1);
       },
       goWithSelected:function(alumno){
+        this.vinculandoPerfil = true;
         store.dispatch('relateAlumnoFamiliars',alumno);
+      },
+      verifyStudentFinded:function(){
+        let vm = this;
+        if(!vm.resultado.length){
+          vm.studentNotFound = true;
+          setTimeout(() => vm.studentNotFound = false, 5000);
+        }else{
+          vm.studentNotFound = false;
+        }
       }
     }
   }
 </script>
 
-<style scoped>
+<style>
+  .dialog.centered-dialog,
+  .v-dialog.centered-dialog
+  {
+    /* background: #282c2dad; */
+    box-shadow: none;
+    border-radius: 6px;
+    width: auto;
+    color: whitesmoke;
+  }
+
+  .not_found{
+    color: #ff5f00 /*ff8c00*/
+  }
+  .descriptions{
+    color: rgb(70, 78, 78);
+  }
 </style>

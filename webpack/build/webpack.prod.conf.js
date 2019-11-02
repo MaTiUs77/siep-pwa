@@ -11,7 +11,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin')
-//const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin')
+const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin')
 //const RemoveServiceWorkerPlugin = require('webpack-remove-serviceworker-plugin')
 const loadMinified = require('./load-minified')
 
@@ -103,13 +103,13 @@ const webpackConfig = merge(baseWebpackConfig, {
       }
     ]),
     // Service Worker
-    /*new SWPrecacheWebpackPlugin({
+    new SWPrecacheWebpackPlugin({
       cacheId: 'siep',
       filename: 'service-worker.js',
       staticFileGlobs: ['dist/!**!/!*.{js,html,css}'],
       minify: true,
       stripPrefix: 'dist/'
-    })*/
+    })
   ]
 })
 

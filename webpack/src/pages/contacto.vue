@@ -61,16 +61,15 @@
         router.push('/')
       },
       createMessage(){
-        var vm = this;
+        let vm = this;
         const curl = axios.create({
           baseURL: process.env.SIEP_API_GW_INGRESS
         });
         vm.sending = true;
         // Header con token
-        console.log(vm.form);
         vm.form.origin = 'siep_pwa';
         curl.defaults.headers.common['Authorization'] = `Bearer ${vm.user.authToken}`;
-        return curl.post('/api/v1/contacto',vm.form)
+        return curl.post('/api/public/app_familiares/v1/contacto',vm.form)
           .then(function (response) {
             vm.sending = false;
             if(!response.data.error){

@@ -1,13 +1,20 @@
 <template>
   <v-container>
     <v-flex xs12 class="text-xs-center">
-      <v-progress-circular
+      <v-dialog v-model="user.apiGetUserDataRunning" persistent content content-class="centered-dialog">
+        <v-container fill-height>
+          <v-layout column justify-center align-center>
+            <v-progress-circular
               :size="70"
               :width="7"
               color="orange"
               indeterminate
               v-if="user.apiGetUserDataRunning"
-      ></v-progress-circular>
+            ></v-progress-circular>
+          </v-layout>
+        </v-container>
+      </v-dialog>
+      
 
       <div v-if="!user.loggedIn && !user.apiGetUserDataRunning">
         <p class="subheading">Por favor, inicie sesion para acceder a esta sección.</p>
@@ -34,7 +41,7 @@
           label="Ingrese su número de documento"
           v-on:keyup.enter="startFindPersona"
           ></v-text-field>
-          <v-btn color="primary" @click="startFindPersona" :loading="findPersonaRunning" :block="isMobile"><v-icon left>search</v-icon>Buscar Perfíl</v-btn>
+          <v-btn color="primary" @click="startFindPersona()" :loading="findPersonaRunning" :block="isMobile"><v-icon left>search</v-icon>Buscar Perfíl</v-btn>
 
           <!-- Resultados de busqueda -->
           <v-container fluid grid-list-md>
@@ -101,10 +108,10 @@
       isMobile:false,
       personaUpdated:false,
       resultado:[],
+      spinner:true,
       documento_nro:"",
       findPersonaRunning: false,
-      vinculandoPerfil:false,
-      
+      vinculandoPerfil: false,
     }),
     created: function() {
       store.commit('updateTitle',"SIEP | Familiares");
@@ -118,6 +125,12 @@
       },
       persona(){
         return store.getters.persona;
+      },
+      administracion(){
+        if(store.state.administracion.administracion.en_mantenimiento === 1){
+          router.push('/mantenimiento');
+        }
+        return store.state.administracion.administracion;
       }
     },
     watch:{
@@ -126,7 +139,8 @@
           this.createFamiliar(value);
         }else{
         }
-      }
+      },
+      administracion(){}
     },
     methods:{
       onResize(){
@@ -146,9 +160,8 @@
         router.push('/inscripciones')
       },
       goWithSelected:function(persona){
-        console.log("antes de limpiar",persona);
+        this.vinculandoPerfil = true;
         persona = _.pickBy(persona, _.identity);
-        console.log("despues de limpiar Nulos",persona);
         persona.ciudad = persona.ciudad.nombre;
         persona.familiar = 1;
         if(persona.sexo === "Masculino" || persona.sexo === "MASCULINO"){
@@ -156,14 +169,13 @@
         }else if(persona.sexo === "Femenino" || persona.sexo === "FEMENINO"){
           persona.vinculo = "Madre";
         }
-        this.vinculandoPerfil = true;
         store.dispatch('apiCreatePersona',persona);
       },
       createFamiliar: function(persona){
         this.personaUpdated = true;
         var pers = persona;
         pers = _.pickBy(pers, _.identity);
-        pers.vinculo
+        pers.vinculo;
         pers._method = "POST";
         pers.familiar = 1;
         pers.ciudad = pers.ciudad.nombre;
@@ -185,8 +197,8 @@
         })
           .then(function (response) {
             // handle success
+
             vm.resultado = response.data.data;
-            console.log(vm.resultado);
             vm.findPersonaRunning = false;
         })
           .catch(function (error) {

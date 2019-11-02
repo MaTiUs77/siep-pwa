@@ -11,7 +11,11 @@
     "server": "node server.js"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
+    "detect-browser": "^4.6.0",
+    "epic-spinners": "^1.1.0",
+    "firebase": "^6.4.0",
+    "lodash": "^4.17.15",
     "vue": "^2.5.2",
     "vue-analytics": "^5.16.4",
     "vue-material-design-icons": "^1.5.1",
@@ -20,7 +24,7 @@
     "vue2-google-maps": "^0.10.6",
     "vuetify": "^1.0.0",
     "vuex": "^3.0.1",
-    "webpack-remove-serviceworker-plugin": "^1.0.0"
+    "web-push": "^3.2.1"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.5",

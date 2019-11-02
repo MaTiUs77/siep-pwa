@@ -190,7 +190,7 @@
           baseURL: vm.apigw
         });
         vm.combo_ciudades_searching = true;
-        return curl.get('/api/forms/ciudades')
+        return curl.get('/api/public/app_familiares/v1/ciudades')
           .then(function (response) {
             vm.combo_ciudades_api  = response.data.map(x => {
               return x.nombre
@@ -215,15 +215,15 @@
           baseURL: vm.apigw
         });
         vm.filtro.with='barrio,cursos.titulacion';
-        return curl.get('/api/v1/centros',{
+        return curl.get('/api/public/app_familiares/v1/centros',{
           params: _.omitBy(vm.filtro, _.isEmpty)
         })
           .then(function (response) {
             let render = response.data.map(function(x) {
               let res ={
                 position:{
-                  lat: x.lng,
-                  lng: x.lat
+                  lat: x.lat,
+                  lng: x.lng
                 },
                 data:x
               };
@@ -252,8 +252,8 @@
       showCenterInfo(centro){
         let vm = this;
         vm.coords ={
-          latitud: centro.lng,
-          longitud: centro.lat
+          latitud: centro.lat,
+          longitud: centro.lng
         };
       },
 
