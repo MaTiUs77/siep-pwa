@@ -46,6 +46,11 @@
           <!-- Resultados de busqueda -->
           <v-container fluid grid-list-md>
             <v-layout row wrap>
+              <div v-show="personNotFound">
+                <p class="not_found">
+                  EL NÚMERO DE DOCUMENTO INGRESADO NO PERTENECE A NINGÚNA PERSONA REGISTRADA
+                </p>
+              </div>
               <v-flex
                     v-for="res in resultado"
                     :key="res.id"
@@ -54,12 +59,12 @@
                 <v-card>
                   <v-layout fill-height>
                     <v-flex xs12 flexbox>
-                      <v-card-title primary-title>
+                      <v-card-text>
                         <div>
-                          <h3 class="subheading mb-0">{{ res.nombres }} {{ res.apellidos}}</h3>
-                          <div>DNI: {{ res.documento_nro}}</div>
+                          <h2 class="subheading mb-0">{{ res.nombres }} {{ res.apellidos}}</h2>
+                          <h3>DNI: {{ res.documento_nro}}</h3>
                         </div>
-                      </v-card-title>
+                      </v-card-text>
                       <v-card-actions>
                         <v-btn color="success" @click="goWithSelected(res)" :loading="vinculandoPerfil" :block="isMobile"><v-icon left>person</v-icon>Vincular Perfíl</v-btn>
                       </v-card-actions>
@@ -111,6 +116,7 @@
       spinner:true,
       documento_nro:"",
       findPersonaRunning: false,
+      personNotFound:false,
       vinculandoPerfil: false,
     }),
     created: function() {
@@ -162,8 +168,12 @@
       goWithSelected:function(persona){
         this.vinculandoPerfil = true;
         persona = _.pickBy(persona, _.identity);
-        persona.ciudad = persona.ciudad.nombre;
-        persona.barrio = persona.barrio.nombre || '';
+        if(persona.ciudad.nombre){
+          persona.ciudad = persona.ciudad.nombre;
+        }
+        if(persona.barrio.nombre){
+          persona.barrio = persona.barrio.nombre;
+        }
         persona.familiar = 1;
         if(persona.sexo === "Masculino" || persona.sexo === "MASCULINO"){
           persona.vinculo = "Padre";
@@ -179,8 +189,13 @@
         pers.vinculo;
         pers._method = "POST";
         pers.familiar = 1;
-        pers.ciudad = pers.ciudad.nombre;
-        pers.barrio = pers.barrio.nombre || '';
+        if(pers.ciudad.nombre){
+          pers.ciudad = pers.ciudad.nombre;
+        }
+        if(pers.barrio.nombre){
+          pers.barrio = pers.barrio.nombre;          
+        }
+
         pers.alumno = 0;
         if(pers.sexo === "Masculino" || pers.sexo === "MASCULINO"){
           pers.vinculo = "Padre";
@@ -192,6 +207,7 @@
       startFindPersona:function(){
         let vm = this;
         vm.findPersonaRunning = true;
+        vm.personNotFound = false;
         vm.resultado = [];
         
         store.dispatch('apiFindPersona',{
@@ -202,6 +218,7 @@
 
             vm.resultado = response.data.data;
             vm.findPersonaRunning = false;
+            vm.verifyPersonFinded();
         })
           .catch(function (error) {
             // handle error
@@ -209,12 +226,24 @@
             vm.findPersonaRunning = false;
           });
       },
+      verifyPersonFinded:function(){
+        let vm = this;
+        if(!vm.resultado.length){
+          vm.personNotFound = true;
+          setTimeout(() => vm.personNotFound = false, 5000);
+        }else{
+          vm.personNotFound = false;
+        }
+      }
     }
   }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.not_found{
+  color: #ff5f00 /*ff8c00*/
+}
 h1, h2 {
   font-weight: normal;
 }
@@ -228,5 +257,9 @@ li {
 }
 a {
   color: #42b983;
+}
+
+.not_found{
+  color: #ff5f00 /*ff8c00*/
 }
 </style>

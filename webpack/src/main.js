@@ -86,9 +86,9 @@ Vue.use(VueAnalytics,{
  *   NOTIFICACIONES PUSH
  **/
 
-import {initializeFirebase,askForPermissioToReceiveNotifications} from './push-notification'
-initializeFirebase()
-askForPermissioToReceiveNotifications()
+// import {initializeFirebase,askForPermissioToReceiveNotifications} from './push-notification'
+// initializeFirebase()
+// askForPermissioToReceiveNotifications()
 
 /** 
  *  END NOTIFICACIONES PUSH

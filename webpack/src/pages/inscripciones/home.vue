@@ -36,7 +36,6 @@
               >
             <v-card>
               <v-layout fill-height>
-                
                 <v-flex xs12 flexbox>
                   <v-card-text>
                     <div>
